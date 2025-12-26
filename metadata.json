@@ -1,0 +1,7 @@
+{
+  "name": "RetailPro Manager",
+  "description": "A comprehensive retail management system for billing, stock tracking, pending payments, and AI-powered insights.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
