@@ -13,11 +13,16 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ invoices, products, transactions }) => {
-  const totalSales = invoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
-  const pendingCollection = invoices.filter(inv => !inv.isPaid).reduce((sum, inv) => sum + inv.grandTotal, 0);
+  // Financial metrics
+  const totalBilled = invoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
+  const totalReceived = invoices.filter(inv => inv.isPaid).reduce((sum, inv) => sum + inv.grandTotal, 0);
+  const totalPendingDues = invoices.filter(inv => !inv.isPaid).reduce((sum, inv) => sum + inv.grandTotal, 0);
+  
+  // Inventory metrics
   const lowStockItems = products.filter(p => p.stock <= p.lowStockThreshold);
   const lowStockCount = lowStockItems.length;
 
+  // Chart data
   const salesData = invoices.slice(-7).map(inv => ({
     name: new Date(inv.date).toLocaleDateString('en-US', { weekday: 'short' }),
     sales: inv.grandTotal
@@ -31,25 +36,49 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, products, transactions 
 
   return (
     <div className="space-y-6">
+      {/* Financial Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Sales" value={`₹${totalSales.toLocaleString()}`} color="blue" />
-        <StatCard title="Pending Payments" value={`₹${pendingCollection.toLocaleString()}`} color="orange" />
-        <StatCard title="Low Stock Items" value={lowStockCount} color="red" />
-        <StatCard title="Total Transactions" value={transactions.length} color="emerald" />
+        <StatCard 
+          title="Total Billed" 
+          value={`₹${totalBilled.toLocaleString()}`} 
+          color="blue" 
+          subtitle="Cumulative sales volume"
+        />
+        <StatCard 
+          title="Total Received" 
+          value={`₹${totalReceived.toLocaleString()}`} 
+          color="emerald" 
+          subtitle="Cleared payments"
+        />
+        <StatCard 
+          title="Pending Customer Dues" 
+          value={`₹${totalPendingDues.toLocaleString()}`} 
+          color="orange" 
+          subtitle="Outstanding collection"
+        />
+        <StatCard 
+          title="Low Stock Items" 
+          value={lowStockCount} 
+          color="red" 
+          subtitle="Items below threshold"
+        />
       </div>
 
+      {/* Critical Stock Alerts Section */}
       {lowStockCount > 0 && (
         <div className="bg-white border border-red-100 rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-2 text-red-600 mb-4 font-bold uppercase tracking-tight text-sm">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
             Critical Stock Alerts
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {lowStockItems.map(item => (
-              <div key={item.id} className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded-lg">
+              <div key={item.id} className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded-lg transition-transform hover:scale-[1.02]">
                 <div>
                   <div className="font-bold text-slate-800 text-sm">{item.name}</div>
-                  <div className="text-xs text-red-600 font-medium">Only {item.stock} left</div>
+                  <div className="text-xs text-red-600 font-medium">Only {item.stock} units left</div>
                 </div>
                 <div className="text-[10px] font-bold text-red-400 bg-white px-2 py-1 rounded-full shadow-sm ring-1 ring-red-100">
                   Min: {item.lowStockThreshold}
@@ -60,6 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, products, transactions 
         </div>
       )}
 
+      {/* Analytics Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <h3 className="text-lg font-semibold mb-4 text-slate-800">Recent Sales Trend</h3>
@@ -72,11 +102,13 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, products, transactions 
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="sales" stroke="#3b82f6" fillOpacity={1} fill="url(#colorSales)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                />
+                <Area type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -87,11 +119,13 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, products, transactions 
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stockLevelData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="stock" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="stock" fill="#3b82f6" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -101,17 +135,22 @@ const Dashboard: React.FC<DashboardProps> = ({ invoices, products, transactions 
   );
 };
 
-const StatCard = ({ title, value, color }: { title: string, value: string | number, color: string }) => {
+const StatCard = ({ title, value, color, subtitle }: { title: string, value: string | number, color: string, subtitle?: string }) => {
   const colors: Record<string, string> = {
-    blue: 'text-blue-600 bg-blue-50',
-    orange: 'text-orange-600 bg-orange-50',
-    red: 'text-red-600 bg-red-50',
-    emerald: 'text-emerald-600 bg-emerald-50'
+    blue: 'text-blue-600 bg-blue-50 border-blue-100',
+    orange: 'text-orange-600 bg-orange-50 border-orange-100',
+    red: 'text-red-600 bg-red-50 border-red-100',
+    emerald: 'text-emerald-600 bg-emerald-50 border-emerald-100'
   };
+  
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 transition-all hover:shadow-md">
-      <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">{title}</p>
-      <div className={`mt-2 text-2xl font-bold ${colors[color].split(' ')[0]}`}>{value}</div>
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 transition-all hover:shadow-md hover:border-slate-300">
+      <div className="flex flex-col">
+        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">{title}</p>
+        <div className={`text-2xl font-black mb-1 ${colors[color].split(' ')[0]}`}>{value}</div>
+        {subtitle && <p className="text-[11px] text-slate-400 font-medium">{subtitle}</p>}
+      </div>
+      <div className={`mt-4 h-1 w-full rounded-full opacity-20 ${colors[color].split(' ')[1].replace('bg-', 'bg-')}`}></div>
     </div>
   );
 };
